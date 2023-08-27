@@ -101,6 +101,13 @@ class FigmaExporter {
     const finalConfig = { ...this.config, ...overrideConfig };
     const finalName = overrideConfig.name || asset.name;
     const imagePath = path.resolve(finalConfig.assetsPath, `${finalName}.${asset.format}`);
+
+    // Ensure directory exists
+    const directory = path.dirname(imagePath);
+    if (!fs.existsSync(directory)) {
+      mkdirp.sync(directory);
+    }
+
     const writer = fs.createWriteStream(imagePath);
 
     const response = await axios.get(asset.image, {
