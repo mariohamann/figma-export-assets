@@ -5,14 +5,17 @@ const mkdirp = require('mkdirp');
 
 class FigmaExporter {
   constructor(config) {
-    this.config = config;
-    this.figmaClientInstance = this.figma(this.config.figmaPersonalToken);
+    this.config = {
+      baseURL: 'https://api.figma.com/v1', // default value
+      format: 'svg',
+      scale: 1,
+      ...config
+    };
+    this.figmaClientInstance = this.createFigmaClient(this.config.figmaPersonalToken);
   }
 
-  figma(token) {
-    const instance = axios.create({
-      baseURL: 'https://api.figma.com/v1'
-    });
+  createFigmaClient(token) {
+    const instance = axios.create({ baseURL: this.config.baseURL });
     instance.interceptors.request.use((conf) => {
       conf.headers = {
         'Content-Type': 'application/json',
@@ -58,7 +61,7 @@ class FigmaExporter {
     const writer = fs.createWriteStream(imagePath);
     const response = await axios.get(url, { responseType: 'stream' });
     response.data.pipe(writer);
-    await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       writer.on('finish', resolve);
       writer.on('error', reject);
     });
@@ -84,18 +87,6 @@ class FigmaExporter {
     const res = await figmaClient.get(`/images/${config.fileId}?ids=${iconIds}&format=${config.format || 'svg'}&scale=${config.scale || 1}`);
     icons.forEach(icon => icon.image = res.data.images[icon.id]);
     return icons;
-  }
-
-  async downloadImage(url, name, iconsPath, config) {
-    const finalName = config.name || name;
-    const imagePath = path.resolve(iconsPath, `${finalName}.${config.format}`);
-    const writer = fs.createWriteStream(imagePath);
-    const response = await axios.get(url, { responseType: 'stream' });
-    response.data.pipe(writer);
-    await new Promise((resolve, reject) => {
-      writer.on('finish', resolve);
-      writer.on('error', reject);
-    });
   }
 }
 
