@@ -9,6 +9,7 @@ class FigmaExporter {
       baseURL: 'https://api.figma.com/v1', // default value
       format: 'svg',
       scale: 1,
+      exportVariants: true,
       ...config
     };
     this.figmaClientInstance = this.createFigmaClient(this.config.figmaPersonalToken);
@@ -27,66 +28,81 @@ class FigmaExporter {
     return instance;
   }
 
-  createOutputDirectory(iconsPath) {
-    const directory = path.resolve(iconsPath);
-    if (!fs.existsSync(directory)) {
-      mkdirp.sync(directory);
-    }
-  }
-
-  async deleteIcons(iconsPath) {
-    const directory = path.resolve(iconsPath);
-    const files = fs.readdirSync(directory);
-    for (let file of files) {
-      const filePath = path.join(directory, file);
-      if (fs.lstatSync(filePath).isDirectory()) {
-        await this.deleteIcons(filePath); // Recursive call
-      } else {
-        fs.unlinkSync(filePath);
-      }
-    }
-    fs.rmdirSync(directory);
-  }
-
-  async getAllIcons() {
-    return this.getFigmaFile(this.figmaClientInstance, this.config.fileId, this.config.page, this.config.frame)
-      .then((icons) => this.getImages(this.figmaClientInstance, this.config, icons));
-  }
-
-  async downloadIcon(icon, overrideConfig = {}) {
-    const finalConfig = { ...this.config, ...overrideConfig };
-    const finalName = overrideConfig.name || icon.name;
-    const url = icon.image;
-    const imagePath = path.resolve(finalConfig.iconsPath, `${finalName}.${finalConfig.format}`);
-    const writer = fs.createWriteStream(imagePath);
-    const response = await axios.get(url, { responseType: 'stream' });
-    response.data.pipe(writer);
-    return new Promise((resolve, reject) => {
-      writer.on('finish', resolve);
-      writer.on('error', reject);
-    });
-  }
-
-  async getFigmaFile(figmaClient, fileId, pageName, frameName) {
+  async getAssetsFromFigmaFile(figmaClient, fileId, pageName, frameName) {
     const res = await figmaClient.get(`/files/${fileId}`);
     const page = res.data.document.children.find(c => c.name === pageName);
     if (!page) throw new Error('Cannot find Icons Page, check your settings');
 
     let iconsArray = page.children;
     if (frameName) {
-      const frame = page.children.find(c => c.name === frameName);
-      if (!frame) throw new Error(`Cannot find ${frameName} Frame in this Page, check your settings`);
-      iconsArray = frame.children;
+      const frameRoot = page.children.find(c => c.name === frameName);
+      if (!frameRoot) throw new Error(`Cannot find ${frameName} Frame in this Page, check your settings`);
+      iconsArray = frameRoot.children;
     }
 
-    return iconsArray.map((icon) => ({ id: icon.id, name: icon.name }));
+    let icons = iconsArray.flatMap((icon) => {
+      if (this.config.exportVariants && icon.children && icon.children.length > 0) {
+        return icon.children.map((child) => {
+          const variants = child.name.split(',').map((prop) => {
+            return prop.trim();
+          }).join('--');
+          return { id: child.id, name: icon.name + '/' + variants }
+        });
+      } else {
+        return [{ id: icon.id, name: icon.name }]
+      }
+    });
+
+    icons = this.findDuplicates('name', icons);
+    return icons;
   }
 
-  async getImages(figmaClient, config, icons) {
+  findDuplicates(key, arr) {
+    const seen = new Set();
+    return arr.filter(item => {
+      const value = item[key];
+      if (seen.has(value)) {
+        console.warn(`Duplicate key value found: ${value}`);
+        return false;
+      }
+      seen.add(value);
+      return true;
+    });
+  }
+
+  async getAssets() {
+    return this.getAssetsFromFigmaFile(this.figmaClientInstance, this.config.fileId, this.config.page, this.config.frame);
+  }
+
+  async exportAssets(icons, format, scale) {
     const iconIds = icons.map(icon => icon.id).join(',');
-    const res = await figmaClient.get(`/images/${config.fileId}?ids=${iconIds}&format=${config.format || 'svg'}&scale=${config.scale || 1}`);
-    icons.forEach(icon => icon.image = res.data.images[icon.id]);
+    const res = await this.figmaClientInstance.get(`/images/${this.config.fileId}?ids=${iconIds}&format=${format || 'svg'}&scale=${scale || 1}`);
+    icons.forEach(icon => {
+      icon.image = res.data.images[icon.id];
+      icon.format = format || 'svg';
+    });
+
     return icons;
+  }
+
+  async saveAsset(icon, overrideConfig = {}) {
+    const finalConfig = { ...this.config, ...overrideConfig };
+    const finalName = overrideConfig.name || icon.name;
+    const imagePath = path.resolve(finalConfig.iconsPath, `${finalName}.${icon.format}`);
+    const writer = fs.createWriteStream(imagePath);
+
+    const response = await axios.get(icon.image, {
+      responseType: 'stream',
+      headers: {
+        'X-Figma-Token': this.config.figmaPersonalToken
+      }
+    });
+    response.data.pipe(writer);
+
+    return new Promise((resolve, reject) => {
+      writer.on('finish', resolve);
+      writer.on('error', reject);
+    });
   }
 }
 
