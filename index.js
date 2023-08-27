@@ -60,21 +60,25 @@ const mkdirp = require('mkdirp');
     return iconsArray.map(icon => ({ id: icon.id, name: icon.name }));
   }
 
-  async function getImages(figmaClient, fileId, icons) {
+  async function getImages(figmaClient, config, icons) {
     const iconIds = icons.map(icon => icon.id).join(',');
-    const res = await figmaClient.get(`/images/${fileId}?ids=${iconIds}&format=svg`);
+    const res = await figmaClient.get(`/images/${config.fileId}?ids=${iconIds}&format=${config.format}&scale=${config.scale}`);
     icons.forEach(icon => icon.image = res.data.images[icon.id]);
     return icons;
   }
 
-  async function downloadImage(url, name, iconsPath, removeFromName = '') {
+  async function downloadImage(url, name, iconsPath, config, removeFromName = '') {
     const nameClean = name.replace(new RegExp(removeFromName, 'g'), '');
-    const filePath = path.resolve(iconsPath, `${nameClean}.svg`);
-    const writer = fs.createWriteStream(filePath);
+    const suffix = config.scale == 1 ? '' : `@${config.scale}x`;
+    const imagePath = path.resolve(iconsPath, `${nameClean}${suffix}.${config.format}`);
+    const writer = fs.createWriteStream(imagePath);
     const response = await axios.get(url, { responseType: 'stream' });
     response.data.pipe(writer);
     await new Promise((resolve, reject) => {
-      writer.on('finish', resolve);
+      writer.on('finish', () => resolve({
+        name: `${name}.${config.format}`,
+        size: fs.statSync(imagePath).size
+      }));
       writer.on('error', reject);
     });
   }
@@ -84,9 +88,13 @@ const mkdirp = require('mkdirp');
     await deleteIcons(config.iconsPath);
     const figmaClientInstance = figma(config.figmaPersonalToken);
     const icons = await getFigmaFile(figmaClientInstance, config.fileId, config.page, config.frame);
-    const iconsWithImages = await getImages(figmaClientInstance, config.fileId, icons);
-    await Promise.all(iconsWithImages.map(icon => downloadImage(icon.image, icon.name, config.iconsPath, config.removeFromName)));
+    const iconsWithImages = await getImages(figmaClientInstance, config, icons);
+    await Promise.all(iconsWithImages.map(icon => downloadImage(icon.image, icon.name, config.iconsPath, config, config.removeFromName)));
   }
+
+  module.exports = {
+    exportIcons
+  };
 
   module.exports = {
     exportIcons
