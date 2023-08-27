@@ -1,26 +1,25 @@
 {
-  "name": "figma-export-icons",
+  "name": "figma-export-assets",
   "version": "1.5.0",
-  "description": "Script to generate and download icons from a figma file",
+  "description": "Script to generate and download assets from a figma file",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tsimenis/figma-export-icons.git"
+    "url": "git+https://github.com/mariohamann/figma-export-assets.git"
   },
   "keywords": [
-    "cli",
     "figma",
     "figma-api"
   ],
-  "author": "George Tsimenis",
+  "author": "Mario Hamann",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/tsimenis/figma-export-icons/issues"
+    "url": "https://github.com/mariohamann/figma-export-assets/issues"
   },
-  "homepage": "https://github.com/tsimenis/figma-export-icons#readme",
+  "homepage": "https://github.com/mariohamann/figma-export-assets#readme",
   "dependencies": {
     "axios": "^0.21.1",
     "mkdirp": "^0.5.1"
