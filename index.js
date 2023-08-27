@@ -74,15 +74,27 @@ class FigmaExporter {
     return this.getAssetsFromFigmaFile(this.figmaClientInstance, this.config.fileId, this.config.page, this.config.frame);
   }
 
-  async exportAssets(icons, format, scale) {
-    const iconIds = icons.map(icon => icon.id).join(',');
-    const res = await this.figmaClientInstance.get(`/images/${this.config.fileId}?ids=${iconIds}&format=${format || 'svg'}&scale=${scale || 1}`);
-    icons.forEach(icon => {
-      icon.image = res.data.images[icon.id];
-      icon.format = format || 'svg';
-    });
+  async exportAssets(icons, format = 'svg', scale = 1, batchSize = 100) {
+    const batches = [];
+    for (let i = 0; i < icons.length; i += batchSize) {
+      batches.push(icons.slice(i, i + batchSize));
+    }
 
-    return icons;
+    const results = [];
+
+    for (const batch of batches) {
+      const iconIds = batch.map(icon => icon.id).join(',');
+      const res = await this.figmaClientInstance.get(`/images/${this.config.fileId}?ids=${iconIds}&format=${format}&scale=${scale}`);
+
+      batch.forEach(icon => {
+        icon.image = res.data.images[icon.id];
+        icon.format = format;
+      });
+
+      results.push(...batch);
+    }
+
+    return results;
   }
 
   async saveAsset(icon, overrideConfig = {}) {
