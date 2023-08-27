@@ -31,30 +31,30 @@ class FigmaExporter {
   async getAssetsFromFigmaFile(figmaClient, fileId, pageName, frameName) {
     const res = await figmaClient.get(`/files/${fileId}`);
     const page = res.data.document.children.find(c => c.name === pageName);
-    if (!page) throw new Error('Cannot find Icons Page, check your settings');
+    if (!page) throw new Error('Cannot find Assets Page, check your settings');
 
-    let iconsArray = page.children;
+    let assetsArray = page.children;
     if (frameName) {
       const frameRoot = page.children.find(c => c.name === frameName);
       if (!frameRoot) throw new Error(`Cannot find ${frameName} Frame in this Page, check your settings`);
-      iconsArray = frameRoot.children;
+      assetsArray = frameRoot.children;
     }
 
-    let icons = iconsArray.flatMap((icon) => {
-      if (this.config.exportVariants && icon.children && icon.children.length > 0) {
-        return icon.children.map((child) => {
+    let assets = assetsArray.flatMap((asset) => {
+      if (this.config.exportVariants && asset.children && asset.children.length > 0) {
+        return asset.children.map((child) => {
           const variants = child.name.split(',').map((prop) => {
             return prop.trim();
           }).join('--');
-          return { id: child.id, name: icon.name + '/' + variants }
+          return { id: child.id, name: asset.name + '/' + variants }
         });
       } else {
-        return [{ id: icon.id, name: icon.name }]
+        return [{ id: asset.id, name: asset.name }]
       }
     });
 
-    icons = this.findDuplicates('name', icons);
-    return icons;
+    assets = this.findDuplicates('name', assets);
+    return assets;
   }
 
   findDuplicates(key, arr) {
@@ -74,21 +74,21 @@ class FigmaExporter {
     return this.getAssetsFromFigmaFile(this.figmaClientInstance, this.config.fileId, this.config.page, this.config.frame);
   }
 
-  async exportAssets(icons, format = 'svg', scale = 1, batchSize = 100) {
+  async exportAssets(assets, format = 'svg', scale = 1, batchSize = 100) {
     const batches = [];
-    for (let i = 0; i < icons.length; i += batchSize) {
-      batches.push(icons.slice(i, i + batchSize));
+    for (let i = 0; i < assets.length; i += batchSize) {
+      batches.push(assets.slice(i, i + batchSize));
     }
 
     const results = [];
 
     for (const batch of batches) {
-      const iconIds = batch.map(icon => icon.id).join(',');
-      const res = await this.figmaClientInstance.get(`/images/${this.config.fileId}?ids=${iconIds}&format=${format}&scale=${scale}`);
+      const assetIds = batch.map(asset => asset.id).join(',');
+      const res = await this.figmaClientInstance.get(`/images/${this.config.fileId}?ids=${assetIds}&format=${format}&scale=${scale}`);
 
-      batch.forEach(icon => {
-        icon.image = res.data.images[icon.id];
-        icon.format = format;
+      batch.forEach(asset => {
+        asset.image = res.data.images[asset.id];
+        asset.format = format;
       });
 
       results.push(...batch);
@@ -97,13 +97,13 @@ class FigmaExporter {
     return results;
   }
 
-  async saveAsset(icon, overrideConfig = {}) {
+  async saveAsset(asset, overrideConfig = {}) {
     const finalConfig = { ...this.config, ...overrideConfig };
-    const finalName = overrideConfig.name || icon.name;
-    const imagePath = path.resolve(finalConfig.iconsPath, `${finalName}.${icon.format}`);
+    const finalName = overrideConfig.name || asset.name;
+    const imagePath = path.resolve(finalConfig.assetsPath, `${finalName}.${asset.format}`);
     const writer = fs.createWriteStream(imagePath);
 
-    const response = await axios.get(icon.image, {
+    const response = await axios.get(asset.image, {
       responseType: 'stream',
       headers: {
         'X-Figma-Token': this.config.figmaPersonalToken
