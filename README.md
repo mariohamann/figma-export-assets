@@ -1,6 +1,12 @@
 # figma-export-assets
 
-Example implementation
+## Install
+
+```bash
+npm install figma-export-assets
+```
+
+## Minimal Example
 
 ```js
 // get figmaPersonalToken and fileId from .env
@@ -49,3 +55,65 @@ async function main() {
 
 main();
 ```
+
+## Constructor
+
+### `constructor(config)`
+
+Creates a new instance of the FigmaExporter.
+
+#### Parameters
+
+-   `config`: An object containing configuration settings.
+    -   `baseURL` (string, optional): The base URL for the Figma API. Defaults to `'https://api.figma.com/v1'`.
+    -   `format` (string, optional): The format of the exported assets. Defaults to `'svg'`.
+    -   `assetsPath` (string, required): The path to save the exported assets to.
+    -   `scale` (number, optional): The scale at which to export assets. Defaults to `1`.
+    -   `axiosConfig` (Object, optional): Additional Axios configuration settings.
+    -   `exportVariants` (boolean, optional): Whether to export variants of the assets. Defaults to `true`.
+    -   `figmaPersonalToken` (string, required): Personal access token for the Figma API.
+    -   `fileId` (string, required): The ID of the Figma file to export assets from.
+    -   `page` (string, required): The name of the page to export assets from.
+    -   `frame` (string, optional): The name of the frame to export assets from.
+
+## Methods
+
+### `getAssets()`
+
+Fetches assets from Figma using the configured settings.
+
+#### Returns
+
+-   `Promise<Array>`: A promise that resolves to an array of assets.
+
+### `exportAssets(assets, format, scale, batchSize)`
+
+Exports assets from Figma in batches.
+
+#### Parameters
+
+-   `assets` (Array): The assets to export.
+-   `format` (string, optional): The format to export the assets in. Defaults to `'svg'`.
+-   `scale` (number, optional): The scale at which to export the assets. Defaults to `1`.
+-   `batchSize` (number, optional): The number of assets to export in each batch. Defaults to `100`.
+
+#### Returns
+
+-   `Promise<Array>`: A promise that resolves to an array of exported assets.
+
+### `saveAsset(asset, overrideConfig)`
+
+Saves assets to the configured assets path.
+
+#### Parameters
+
+-   `asset` (Object): The asset to save.
+-   `overrideConfig` (Object, optional): Overrides for the exporter configuration.
+    -   `name` (string, optional): Overrides the name of the asset.
+    -   `format` (string, optional): The format of the exported assets. Defaults to `'svg'`.
+    -   `assetsPath` (string, optional): The path to save the exported assets to.
+    -   `scale` (number, optional): The scale at which to export assets. Defaults to `1`.
+
+#### Returns
+
+-   `Promise`: A promise that resolves when all assets have been saved.
