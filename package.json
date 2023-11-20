@@ -1,11 +1,18 @@
 {
   "name": "figma-export-assets",
-  "version": "1.5.0",
-  "description": "Script to generate and download assets from a figma file",
+  "version": "0.0.1",
+  "description": "Script to generate and download assets from a Figma file",
   "main": "index.js",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "LICENSE",
+    "README.md"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "npx -p typescript tsc *.js --declaration --allowJs --emitDeclarationOnly"
   },
+  "types": "./index.d.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/mariohamann/figma-export-assets.git"
