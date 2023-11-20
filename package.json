@@ -30,5 +30,36 @@
   "dependencies": {
     "axios": "^0.21.1",
     "mkdirp": "^0.5.1"
+  },
+  "release": {
+    "branches": [
+      "main"
+    ],
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      [
+        "@semantic-release/changelog",
+        {
+          "changelogFile": "CHANGELOG.md"
+        }
+      ],
+      [
+        "@semantic-release/npm",
+        {
+          "npmPublish": true
+        }
+      ],
+      [
+        "@semantic-release/git",
+        {
+          "message": "v${nextRelease.version}\n\n${nextRelease.notes}",
+          "assets": [
+            "CHANGELOG.md",
+            "package.json"
+          ]
+        }
+      ]
+    ]
   }
 }
