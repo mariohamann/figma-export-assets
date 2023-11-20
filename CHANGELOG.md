@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/mariohamann/figma-export-assets/compare/v1.0.0...v1.0.1) (2023-11-20)
+
+
+### Bug Fixes
+
+* improve readme ([4a43b6d](https://github.com/mariohamann/figma-export-assets/commit/4a43b6d9cddcda501e04dd1a101f7b916ff355b9))
+
 # 1.0.0 (2023-11-20)
 
 
