@@ -1,3 +1,10 @@
+## [1.0.4](https://github.com/mariohamann/figma-export-assets/compare/v1.0.3...v1.0.4) (2024-01-07)
+
+
+### Bug Fixes
+
+* improve example ([65749fd](https://github.com/mariohamann/figma-export-assets/commit/65749fd0f13a666f99fcb38bf1a0aa3c4b705b35))
+
 ## [1.0.3](https://github.com/mariohamann/figma-export-assets/compare/v1.0.2...v1.0.3) (2024-01-07)
 
 
