@@ -10,6 +10,8 @@ npm install figma-export-assets
 
 A highly customizable package for exporting assets from Figma API in any supported format.
 
+🙏🏻 Based on concepts by https://github.com/tsimenis/figma-export-icons and https://github.com/nate-summercook/figma-assets-exporter but with focus on customizability. Thanks to both of them for their work!
+
 ## Features
 
 -   📄 Multiple Figma Pages/Frames: Configure to process assets from various Figma pages or specific frames.
