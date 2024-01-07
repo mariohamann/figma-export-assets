@@ -22,7 +22,7 @@ A highly customizable package for exporting assets from Figma API in any support
 -   ⚙️ Axios Integration: Extend or modify Axios configurations for advanced HTTP request handling.
 -   🌟 Variant Exporting: Overridable option to export components with variants as separate assets.
 
-## Minimal Example
+## Example: Basic Usage
 
 ```js
 // get figmaPersonalToken and fileId from .env
@@ -38,30 +38,80 @@ const config = {
 };
 
 async function main() {
+	// 0. Initialize exporter
 	const figma = new FigmaExporter(config);
 
+	// 1. Get an array of all assets in the Figma file
+	let assets = await figma.getAssets();
+
+	// 2. Create SVGs (Figma API)
+	svgs = await figma.exportAssets(assets, "svg");
+
+	const svgDownloads = svgs.map(async (asset) => {
+		// 3. Download each exported asset
+		await figma.saveAsset(asset);
+		console.log(`Downloaded ${asset.name} as svg`);
+	});
+
+	await Promise.all(svgDownloads);
+}
+
+// Run everything
+main();
+```
+
+## Example: Individual Asset Handling
+
+```js
+// get figmaPersonalToken and fileId from .env
+require("dotenv").config({ path: ".env" });
+
+const { FigmaExporter } = require("figma-export-assets");
+
+const config = {
+	figmaPersonalToken: process.env.figma_token,
+	fileId: process.env.figma_file_id,
+	page: "📎 assets",
+	assetsPath: "src",
+};
+
+async function main() {
+	// 0. Initialize exporter
+	const figma = new FigmaExporter(config);
+
+	// Helper function to optimize the path coming from Figma
 	const optimizePath = (path) =>
 		path.replace("assets/", "").replace("name=", "").replace(".png", "");
 
-	// Step 1: Get Assets
+	// 1. Get an array of all assets in the Figma file
 	let assets = await figma.getAssets();
 
-	// Step 2: Create PNGs
+	// 2. Create PNGs
+
+	// 2a. Select all assets which have `.png` in their name in Figma
 	let pngs = assets.filter((asset) => asset.name.includes(".png"));
+	// 2b. Let Figma export the assets as PNGs with a scale of 4
 	pngs = await figma.exportAssets(pngs, "png", 4);
 	const pngDownloads = pngs.map(async (asset) => {
+		// 2c. Download each exported asset
 		await figma.saveAsset(asset, {
+			// 2d. Optimize the path coming from Figma
 			path: optimizePath(asset.name),
 		});
 		console.log(`Downloaded ${asset.name} as png`);
 	});
 	await Promise.all(pngDownloads);
 
-	// Step 3: Create SVGs
+	// 3. Create SVGs
+
+	// 3a. Select all assets which do NOT have `.png` in their name in Figma
 	let svgs = assets.filter((asset) => !asset.name.includes(".png"));
+	// 3b. Let Figma export the assets as SVGs
 	svgs = await figma.exportAssets(svgs, "svg");
 	const svgDownloads = svgs.map(async (asset) => {
+		// 3c. Download each exported asset
 		await figma.saveAsset(asset, {
+			// 3d. Optimize the path coming from Figma
 			name: optimizePath(asset.name),
 		});
 		console.log(`Downloaded ${asset.name} as svg`);
@@ -69,6 +119,7 @@ async function main() {
 	await Promise.all(svgDownloads);
 }
 
+// Run everything
 main();
 ```
 
