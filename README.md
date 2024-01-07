@@ -6,6 +6,20 @@
 npm install figma-export-assets
 ```
 
+## Description
+
+A highly customizable package for exporting assets from Figma API in any supported format.
+
+## Features
+
+-   📄 Multiple Figma Pages/Frames: Configure to process assets from various Figma pages or specific frames.
+-   🔄 Batch Exporting: Supports batch exporting out of the box to overcame Figma API export limits.
+-   📁 Customizable Asset Paths/Names: Set unique saving paths or names for each asset.
+-   🌈 Customizable Asset Format: Chose any Figma export format for each asset.
+-   🚫 Asset Exclusion: Easily exclude specific assets from export based on their names.
+-   ⚙️ Axios Integration: Extend or modify Axios configurations for advanced HTTP request handling.
+-   🌟 Variant Exporting: Overridable option to export components with variants as separate assets.
+
 ## Minimal Example
 
 ```js
