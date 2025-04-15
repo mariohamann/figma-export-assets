@@ -87,14 +87,13 @@ class FigmaExporter {
    *
    * @private
    *
-   * @param {Object} figmaClient - The Figma API client.
    * @param {string} fileId - The ID of the Figma file to export assets from.
    * @param {string} pageName - The name of the page to export assets from.
    * @param {string} frameName - The name of the frame to export assets from.
    * @returns {Promise<Array>} A promise that resolves to an array of assets.
    *
    */
-  async getAssetsFromFigmaFile(figmaClient, fileId, pageName, frameName) {
+  async getAssetsFromFigmaFile(fileId, pageName, frameName) {
     const res = await this.figmaGet(`/files/${fileId}`);
     const page = res.document.children.find((c) => c.name === pageName);
 
@@ -156,7 +155,6 @@ class FigmaExporter {
    */
   async getAssets() {
     return this.getAssetsFromFigmaFile(
-      this.figmaClientInstance,
       this.config.fileId,
       this.config.page,
       this.config.frame
@@ -197,14 +195,14 @@ class FigmaExporter {
   }
 
   /**
-   * Saves assets to the configured assets path.
-   * @param {Object} asset - The assets to save.
+   * Save an exported asset to the configured assets path.
+   * @param {Object} asset - The asset to save.
    * @param {Object} [overrideConfig] - Overrides for the exporter config.
    * @param {string} [overrideConfig.name] - Overrides the name of the asset.
-   * @param {string} [overrideConfig.format='svg'] - The format of the exported assets. Optional.
-   * @param {string} [overrideConfig.assetsPath] - The path to save the exported assets to. Optional.
-   * @param {number} [overrideConfig.scale=1] - The scale at which to export assets. Optional.
-   * @returns {Promise} A promise that resolves when all assets have been saved.
+   * @param {string} [overrideConfig.format='svg'] - The format of the exported asset. Optional.
+   * @param {string} [overrideConfig.assetsPath] - The path to save the exported asset to. Optional.
+   * @param {number} [overrideConfig.scale=1] - The scale at which to export the asset. Optional.
+   * @returns {Promise} A promise that resolves when the asset has been saved.
    */
 
   async saveAsset(asset, overrideConfig = {}) {

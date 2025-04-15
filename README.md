@@ -15,9 +15,9 @@ A highly customizable package for exporting assets from Figma API in any support
 ## Features
 
 -   📄 Multiple Figma Pages/Frames: Configure to process assets from various Figma pages or specific frames.
--   🔄 Batch Exporting: Supports batch exporting out of the box to overcame Figma API export limits.
+-   🔄 Batch Exporting: Supports batch exporting out of the box to handle Figma API export limits.
 -   📁 Customizable Asset Paths/Names: Set unique saving paths or names for each asset.
--   🌈 Customizable Asset Format: Chose any Figma export format for each asset.
+-   🌈 Customizable Asset Format: Choose any Figma export format for each asset.
 -   🚫 Asset Exclusion: Easily exclude specific assets from export based on their names.
 -   🌟 Variant Exporting: Overridable option to export components with variants as separate assets.
 
@@ -151,7 +151,7 @@ Fetches assets from Figma using the configured settings.
 
 -   `Promise<Array>`: A promise that resolves to an array of assets.
 
-### `exportAssets(assets, format, scale, batchSize)`
+### `exportAssets(assets, format?, scale?, batchSize?)`
 
 Exports assets from Figma in batches.
 
@@ -166,19 +166,19 @@ Exports assets from Figma in batches.
 
 -   `Promise<Array>`: A promise that resolves to an array of exported assets.
 
-### `saveAsset(asset, overrideConfig)`
+### `saveAsset(asset, overrideConfig?)`
 
-Saves assets to the configured assets path.
+Saves an exported asset to the configured assets path.
 
 #### Parameters
 
 -   `asset` (Object): The asset to save.
 -   `overrideConfig` (Object, optional): Overrides for the exporter configuration.
     -   `name` (string, optional): Overrides the name of the asset.
-    -   `format` (string, optional): The format of the exported assets. Defaults to `'svg'`.
-    -   `assetsPath` (string, optional): The path to save the exported assets to.
-    -   `scale` (number, optional): The scale at which to export assets. Defaults to `1`.
+    -   `format` (string, optional): The format of the exported asset. Defaults to `'svg'`.
+    -   `assetsPath` (string, optional): The path to save the exported asset to.
+    -   `scale` (number, optional): The scale at which to export the asset. Defaults to `1`.
 
 #### Returns
 
--   `Promise`: A promise that resolves when all assets have been saved.
+-   `Promise`: A promise that resolves when the asset has been saved.
