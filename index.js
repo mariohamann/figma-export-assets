@@ -1,5 +1,5 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 const axios = require('axios');
 const mkdirp = require('mkdirp');
 
@@ -17,27 +17,27 @@ class FigmaExporter {
    * @param {string} config.fileId - The ID of the Figma file to export assets from. Required.
    * @param {string} config.page - The name of the page to export assets from. Required.
    * @param {string} [config.frame] - The name of the frame to export assets from. Optional.
-   * 
+   *
    * @example
    * const exporter = new FigmaExporter({
-   * 
+   *
    *   // Optional
    *   baseURL: 'https://api.figma.com/v1',
    *   format: 'svg',
    *   scale: 1,
    *   axiosConfig: {},
    *   exportVariants: true,
-   * 
+   *
    *   // Required
    *   figmaPersonalToken: 'your-personal-token',
    *   fileId: 'your-file-id',
    *   page: 'your-page-name',
    *   assetsPath: 'path/to/assets',
-   * 
+   *
    *   // Optional
    *   frame: 'your-frame-name'
    * });
-  */
+   */
   constructor(config) {
     this.config = {
       baseURL: 'https://api.figma.com/v1',
@@ -46,17 +46,22 @@ class FigmaExporter {
       exportVariants: true,
       ...config
     };
-    this.figmaClientInstance = this.createFigmaClient(this.config.figmaPersonalToken);
+    this.figmaClientInstance = this.createFigmaClient(
+      this.config.figmaPersonalToken
+    );
   }
 
   /**
    * Creates an Axios instance for the Figma API.
-   * 
+   *
    * @private
    * @param {string} token - Personal access token for the Figma API.
-  */
+   */
   createFigmaClient(token) {
-    const instance = axios.create({ ...this.config.axiosConfig, baseURL: this.config.baseURL });
+    const instance = axios.create({
+      ...this.config.axiosConfig,
+      baseURL: this.config.baseURL
+    });
     instance.interceptors.request.use((conf) => {
       conf.headers = {
         'Content-Type': 'application/json',
@@ -70,38 +75,48 @@ class FigmaExporter {
 
   /**
    * Fetches assets from Figma using the configured settings.
-   * 
+   *
    * @private
-   * 
+   *
    * @param {Object} figmaClient - The Figma API client.
    * @param {string} fileId - The ID of the Figma file to export assets from.
    * @param {string} pageName - The name of the page to export assets from.
    * @param {string} frameName - The name of the frame to export assets from.
    * @returns {Promise<Array>} A promise that resolves to an array of assets.
-   *  
+   *
    */
   async getAssetsFromFigmaFile(figmaClient, fileId, pageName, frameName) {
     const res = await figmaClient.get(`/files/${fileId}`);
-    const page = res.data.document.children.find(c => c.name === pageName);
+    const page = res.data.document.children.find((c) => c.name === pageName);
     if (!page) throw new Error('Cannot find Assets Page, check your settings');
 
     let assetsArray = page.children;
     if (frameName) {
-      const frameRoot = page.children.find(c => c.name === frameName);
-      if (!frameRoot) throw new Error(`Cannot find ${frameName} Frame in this Page, check your settings`);
+      const frameRoot = page.children.find((c) => c.name === frameName);
+      if (!frameRoot)
+        throw new Error(
+          `Cannot find ${frameName} Frame in this Page, check your settings`
+        );
       assetsArray = frameRoot.children;
     }
 
     let assets = assetsArray.flatMap((asset) => {
-      if (this.config.exportVariants && asset.children && asset.children.length > 0) {
+      if (
+        this.config.exportVariants &&
+        asset.children &&
+        asset.children.length > 0
+      ) {
         return asset.children.map((child) => {
-          const variants = child.name.split(',').map((prop) => {
-            return prop.trim();
-          }).join('--');
-          return { id: child.id, name: asset.name + '/' + variants }
+          const variants = child.name
+            .split(',')
+            .map((prop) => {
+              return prop.trim();
+            })
+            .join('--');
+          return { id: child.id, name: asset.name + '/' + variants };
         });
       } else {
-        return [{ id: asset.id, name: asset.name }]
+        return [{ id: asset.id, name: asset.name }];
       }
     });
 
@@ -111,16 +126,16 @@ class FigmaExporter {
 
   /**
    * Filters out duplicate assets.
-   * 
+   *
    * @private
-   * 
+   *
    * @param {string} key - The key to filter by.
    * @param {Array} arr - The array to filter.
    * @returns {Array} The filtered array.
    */
   findDuplicates(key, arr) {
     const seen = new Set();
-    return arr.filter(item => {
+    return arr.filter((item) => {
       const value = item[key];
       if (seen.has(value)) {
         console.warn(`Duplicate key value found: ${value}`);
@@ -136,7 +151,12 @@ class FigmaExporter {
    * @returns {Promise<Array>} A promise that resolves to an array of assets.
    */
   async getAssets() {
-    return this.getAssetsFromFigmaFile(this.figmaClientInstance, this.config.fileId, this.config.page, this.config.frame);
+    return this.getAssetsFromFigmaFile(
+      this.figmaClientInstance,
+      this.config.fileId,
+      this.config.page,
+      this.config.frame
+    );
   }
 
   /**
@@ -156,10 +176,12 @@ class FigmaExporter {
     const results = [];
 
     for (const batch of batches) {
-      const assetIds = batch.map(asset => asset.id).join(',');
-      const res = await this.figmaClientInstance.get(`/images/${this.config.fileId}?ids=${assetIds}&format=${format}&scale=${scale}`);
+      const assetIds = batch.map((asset) => asset.id).join(',');
+      const res = await this.figmaClientInstance.get(
+        `/images/${this.config.fileId}?ids=${assetIds}&format=${format}&scale=${scale}`
+      );
 
-      batch.forEach(asset => {
+      batch.forEach((asset) => {
         asset.image = res.data.images[asset.id];
         asset.format = format;
       });
@@ -184,7 +206,10 @@ class FigmaExporter {
   async saveAsset(asset, overrideConfig = {}) {
     const finalConfig = { ...this.config, ...overrideConfig };
     const finalName = overrideConfig.name || asset.name;
-    const imagePath = path.resolve(finalConfig.assetsPath, `${finalName}.${asset.format}`);
+    const imagePath = path.resolve(
+      finalConfig.assetsPath,
+      `${finalName}.${asset.format}`
+    );
 
     // Ensure directory exists
     const directory = path.dirname(imagePath);
