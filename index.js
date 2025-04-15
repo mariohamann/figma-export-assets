@@ -101,23 +101,17 @@ class FigmaExporter {
     }
 
     let assets = assetsArray.flatMap((asset) => {
-      if (
-        this.config.exportVariants &&
-        asset.children &&
-        asset.children.length > 0
-      ) {
-        return asset.children.map((child) => {
-          const variants = child.name
-            .split(',')
-            .map((prop) => {
-              return prop.trim();
-            })
-            .join('--');
-          return { id: child.id, name: asset.name + '/' + variants };
-        });
-      } else {
+      if (!this.config.exportVariants || !asset.children?.length) {
         return [{ id: asset.id, name: asset.name }];
       }
+
+      return asset.children.map((child) => {
+        const variants = child.name
+          .split(',')
+          .map((prop) => prop.trim())
+          .join('--');
+        return { id: child.id, name: `${asset.name}/${variants}` };
+      });
     });
 
     assets = this.findDuplicates('name', assets);
@@ -181,10 +175,10 @@ class FigmaExporter {
         `/images/${this.config.fileId}?ids=${assetIds}&format=${format}&scale=${scale}`
       );
 
-      batch.forEach((asset) => {
+      for (const asset of batch) {
         asset.image = res.data.images[asset.id];
         asset.format = format;
-      });
+      }
 
       results.push(...batch);
     }
