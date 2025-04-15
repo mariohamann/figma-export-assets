@@ -19,7 +19,6 @@ A highly customizable package for exporting assets from Figma API in any support
 -   📁 Customizable Asset Paths/Names: Set unique saving paths or names for each asset.
 -   🌈 Customizable Asset Format: Chose any Figma export format for each asset.
 -   🚫 Asset Exclusion: Easily exclude specific assets from export based on their names.
--   ⚙️ Axios Integration: Extend or modify Axios configurations for advanced HTTP request handling.
 -   🌟 Variant Exporting: Overridable option to export components with variants as separate assets.
 
 ## Example: Basic Usage
@@ -136,7 +135,6 @@ Creates a new instance of the FigmaExporter.
     -   `format` (string, optional): The format of the exported assets. Defaults to `'svg'`.
     -   `assetsPath` (string, required): The path to save the exported assets to.
     -   `scale` (number, optional): The scale at which to export assets. Defaults to `1`.
-    -   `axiosConfig` (Object, optional): Additional Axios configuration settings.
     -   `exportVariants` (boolean, optional): Whether to export variants of the assets. Defaults to `true`.
     -   `figmaPersonalToken` (string, required): Personal access token for the Figma API.
     -   `fileId` (string, required): The ID of the Figma file to export assets from.

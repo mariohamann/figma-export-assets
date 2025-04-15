@@ -1,7 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const axios = require('axios');
 const mkdirp = require('mkdirp');
+const { Readable } = require('node:stream');
 
 class FigmaExporter {
   /**
@@ -11,7 +11,6 @@ class FigmaExporter {
    * @param {string} [config.format='svg'] - The format of the exported assets. Optional.
    * @param {string} config.assetsPath - The path to save the exported assets to. Required.
    * @param {number} [config.scale=1] - The scale at which to export assets. Optional.
-   * @param {Object} [config.axiosConfig] - Additional Axios config. Optional.
    * @param {boolean} [config.exportVariants=true] - Whether to export variants of the assets. Optional.
    * @param {string} config.figmaPersonalToken - Personal access token for the Figma API. Required.
    * @param {string} config.fileId - The ID of the Figma file to export assets from. Required.
@@ -25,7 +24,6 @@ class FigmaExporter {
    *   baseURL: 'https://api.figma.com/v1',
    *   format: 'svg',
    *   scale: 1,
-   *   axiosConfig: {},
    *   exportVariants: true,
    *
    *   // Required
@@ -46,31 +44,42 @@ class FigmaExporter {
       exportVariants: true,
       ...config
     };
-    this.figmaClientInstance = this.createFigmaClient(
-      this.config.figmaPersonalToken
-    );
+    this.headers = this.createFigmaClient(this.config.figmaPersonalToken);
   }
 
   /**
-   * Creates an Axios instance for the Figma API.
+   * Creates a fetch configuration for the Figma API.
    *
    * @private
    * @param {string} token - Personal access token for the Figma API.
+   * @returns {Object} Headers object for fetch requests.
    */
   createFigmaClient(token) {
-    const instance = axios.create({
-      ...this.config.axiosConfig,
-      baseURL: this.config.baseURL
+    return {
+      'Content-Type': 'application/json',
+      'X-Figma-Token': token
+    };
+  }
+
+  /**
+   * Makes a `GET` request to the Figma API
+   *
+   * @private
+   * @param {string} endpoint - API endpoint
+   * @returns {Promise<any>} Parsed JSON response
+   */
+  async figmaGet(endpoint) {
+    const url = `${this.config.baseURL}${endpoint}`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: this.headers
     });
-    instance.interceptors.request.use((conf) => {
-      conf.headers = {
-        'Content-Type': 'application/json',
-        'X-Figma-Token': token
-      };
-      conf.startTime = new Date().getTime();
-      return conf;
-    });
-    return instance;
+
+    if (!response.ok) {
+      throw new Error(`HTTP error with status: ${response.status}`);
+    }
+
+    return response.json();
   }
 
   /**
@@ -86,8 +95,9 @@ class FigmaExporter {
    *
    */
   async getAssetsFromFigmaFile(figmaClient, fileId, pageName, frameName) {
-    const res = await figmaClient.get(`/files/${fileId}`);
-    const page = res.data.document.children.find((c) => c.name === pageName);
+    const res = await this.figmaGet(`/files/${fileId}`);
+    const page = res.document.children.find((c) => c.name === pageName);
+
     if (!page) throw new Error('Cannot find Assets Page, check your settings');
 
     let assetsArray = page.children;
@@ -171,12 +181,12 @@ class FigmaExporter {
 
     for (const batch of batches) {
       const assetIds = batch.map((asset) => asset.id).join(',');
-      const res = await this.figmaClientInstance.get(
+      const res = await this.figmaGet(
         `/images/${this.config.fileId}?ids=${assetIds}&format=${format}&scale=${scale}`
       );
 
       for (const asset of batch) {
-        asset.image = res.data.images[asset.id];
+        asset.image = res.images[asset.id];
         asset.format = format;
       }
 
@@ -211,15 +221,20 @@ class FigmaExporter {
       mkdirp.sync(directory);
     }
 
-    const writer = fs.createWriteStream(imagePath);
-
-    const response = await axios.get(asset.image, {
-      responseType: 'stream',
+    const response = await fetch(asset.image, {
       headers: {
         'X-Figma-Token': this.config.figmaPersonalToken
       }
     });
-    response.data.pipe(writer);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error with status: ${response.status}`);
+    }
+
+    const buffer = await response.arrayBuffer();
+    const readable = Readable.from(Buffer.from(buffer));
+    const writer = fs.createWriteStream(imagePath);
+    readable.pipe(writer);
 
     return new Promise((resolve, reject) => {
       writer.on('finish', resolve);
