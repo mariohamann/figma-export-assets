@@ -20,7 +20,6 @@
   },
   "homepage": "https://github.com/mariohamann/figma-export-assets#readme",
   "dependencies": {
-    "axios": "^0.21.1",
     "mkdirp": "^0.5.1"
   },
   "release": {
