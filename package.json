@@ -3,16 +3,27 @@
   "version": "1.0.4",
   "description": "Script to generate and download assets from a Figma file",
   "main": "index.js",
-  "files": ["index.js", "index.d.ts", "LICENSE", "README.md"],
+  "changeset": "changeset",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "LICENSE",
+    "README.md"
+  ],
   "scripts": {
-    "build": "npx -p typescript tsc *.js --declaration --allowJs --emitDeclarationOnly"
+    "build": "npx -p typescript tsc *.js --declaration --allowJs --emitDeclarationOnly",
+    "test": "node tests/test.mjs",
+    "release": "pnpm build && changeset publish"
   },
   "types": "./index.d.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/mariohamann/figma-export-assets.git"
   },
-  "keywords": ["figma", "figma-api"],
+  "keywords": [
+    "figma",
+    "figma-api"
+  ],
   "author": "Mario Hamann",
   "license": "MIT",
   "bugs": {
@@ -20,42 +31,12 @@
   },
   "homepage": "https://github.com/mariohamann/figma-export-assets#readme",
   "dependencies": {
-    "mkdirp": "^0.5.1"
-  },
-  "release": {
-    "branches": ["main"],
-    "plugins": [
-      "@semantic-release/commit-analyzer",
-      "@semantic-release/release-notes-generator",
-      [
-        "@semantic-release/changelog",
-        {
-          "changelogFile": "CHANGELOG.md"
-        }
-      ],
-      [
-        "@semantic-release/npm",
-        {
-          "npmPublish": true
-        }
-      ],
-      [
-        "@semantic-release/git",
-        {
-          "message": "v${nextRelease.version}\n\n${nextRelease.notes}",
-          "assets": ["CHANGELOG.md", "package.json"]
-        }
-      ]
-    ]
+    "mkdirp": "^3.0.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.9.4",
-    "@semantic-release/changelog": "^6.0.3",
-    "@semantic-release/commit-analyzer": "^11.1.0",
-    "@semantic-release/git": "^10.0.1",
-    "@semantic-release/npm": "^11.0.1",
-    "@semantic-release/release-notes-generator": "^12.1.0",
-    "semantic-release": "^22.0.8"
+    "@changesets/cli": "^2.29.2",
+    "changesets-changelog-clean": "^1.3.0",
+    "dotenv": "^16.5.0"
   },
   "engines": {
     "node": ">=22.11.0"

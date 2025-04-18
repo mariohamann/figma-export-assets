@@ -182,3 +182,15 @@ Saves an exported asset to the configured assets path.
 #### Returns
 
 -   `Promise`: A promise that resolves when the asset has been saved.
+
+## Contributing
+
+### Versioning
+
+Create a changeset via `pnpm changeset`, that describes the changes you made to the codebase. This will be used to generate a changelog entry and version bump. It will be picked up by the release workflow.
+
+### Testing
+
+The tests are based on the following file: https://www.figma.com/design/fgP5dbJzh1bnZqMgnDXoyd/test?node-id=0-1&p=f&t=5uSDKcMwgBqsYBg0-11
+
+To test yourself, Duplicate the file to your drafts and add the needed data to the `.env` file (see `.env.example`).

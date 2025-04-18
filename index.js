@@ -7,14 +7,14 @@ class FigmaExporter {
   /**
    * Creates a FigmaExporter.
    * @param {Object} config - The configuration object for the exporter.
-   * @param {string} [config.baseURL='https://api.figma.com/v1'] - The base URL for the Figma API. Optional.
-   * @param {string} [config.format='svg'] - The format of the exported assets. Optional.
-   * @param {string} config.assetsPath - The path to save the exported assets to. Required.
-   * @param {number} [config.scale=1] - The scale at which to export assets. Optional.
-   * @param {boolean} [config.exportVariants=true] - Whether to export variants of the assets. Optional.
    * @param {string} config.figmaPersonalToken - Personal access token for the Figma API. Required.
    * @param {string} config.fileId - The ID of the Figma file to export assets from. Required.
    * @param {string} config.page - The name of the page to export assets from. Required.
+   * @param {string} [config.baseURL='https://api.figma.com/v1'] - The base URL for the Figma API. Optional.
+   * @param {string} config.assetsPath - The path to save the exported assets to. Required.
+   * @param {string} [config.format='svg'] - The format of the exported assets. Optional.
+   * @param {number} [config.scale=1] - The scale at which to export assets. Optional.
+   * @param {boolean} [config.exportVariants=true] - Whether to export variants of the assets. Optional.
    * @param {string} [config.frame] - The name of the frame to export assets from. Optional.
    *
    * @example
@@ -89,11 +89,11 @@ class FigmaExporter {
    *
    * @param {string} fileId - The ID of the Figma file to export assets from.
    * @param {string} pageName - The name of the page to export assets from.
-   * @param {string} frameName - The name of the frame to export assets from.
+   * @param {string} [frameName] - The name of the frame to export assets from.
    * @returns {Promise<Array>} A promise that resolves to an array of assets.
    *
    */
-  async getAssetsFromFigmaFile(fileId, pageName, frameName) {
+  async getAssetsFromFigmaFile(fileId, pageName, frameName = undefined) {
     const res = await this.figmaGet(`/files/${fileId}`);
     const page = res.document.children.find((c) => c.name === pageName);
 
