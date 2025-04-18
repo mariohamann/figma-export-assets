@@ -1,6 +1,6 @@
 {
   "name": "figma-export-assets",
-  "version": "1.0.4",
+  "version": "2.0.0",
   "description": "Script to generate and download assets from a Figma file",
   "main": "index.js",
   "changeset": "changeset",
