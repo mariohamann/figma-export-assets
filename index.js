@@ -1,214 +1,279 @@
-const fs = require('fs');
-const path = require('path');
-const axios = require('axios');
-const mkdirp = require('mkdirp');
+import fs from "node:fs";
+import path from "node:path";
+import { mkdirp } from "mkdirp";
+import { Readable } from "node:stream";
+import pLimit from "p-limit";
+import { readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
 
-class FigmaExporter {
+/**
+ * @typedef {Object} Config
+ * @property {string} figmaPersonalToken - Personal access token for the Figma API.
+ * @property {string} fileId - The ID of the Figma file to export assets from.
+ * @property {string} page - The name of the page to export assets from.
+ * @property {string} assetsPath - The path to save the exported assets.
+ * @property {string} [format='svg'] - The format of the exported assets.
+ * @property {number} [scale=1] - The scale at which to export assets.
+ * @property {boolean} [exportVariants=true] - Whether to export variants of the assets.
+ * @property {string} [frame] - The name of the frame to export assets from.
+ * @property {number} [batchSize=100] - The number of assets to export in each batch.
+ * @property {number} [concurrencyLimit=5] - The maximum number of concurrent requests.
+ * @property {boolean} [skipExistingFiles=false] - Whether to skip existing files.
+*/
+
+/**
+ * @typedef {Object} Asset
+ * @property {string} id - The ID of the asset.
+ * @property {string} name - The name of the asset.
+ * @property {string} [url] - The URL of the asset image.
+ * @property {string} [assetsPath] - The path to save the asset.
+ */
+
+export default class FigmaExporter {
   /**
    * Creates a FigmaExporter.
-   * @param {Object} config - The configuration object for the exporter.
-   * @param {string} [config.baseURL='https://api.figma.com/v1'] - The base URL for the Figma API. Optional.
-   * @param {string} [config.format='svg'] - The format of the exported assets. Optional.
-   * @param {string} config.assetsPath - The path to save the exported assets to. Required.
-   * @param {number} [config.scale=1] - The scale at which to export assets. Optional.
-   * @param {Object} [config.axiosConfig] - Additional Axios config. Optional.
-   * @param {boolean} [config.exportVariants=true] - Whether to export variants of the assets. Optional.
-   * @param {string} config.figmaPersonalToken - Personal access token for the Figma API. Required.
-   * @param {string} config.fileId - The ID of the Figma file to export assets from. Required.
-   * @param {string} config.page - The name of the page to export assets from. Required.
-   * @param {string} [config.frame] - The name of the frame to export assets from. Optional.
-   * 
+   * @param {Config} config
+   *
+   * @property {Array<Asset>} assets - The array of assets to be exported.
+   *
    * @example
    * const exporter = new FigmaExporter({
-   * 
+   *
    *   // Optional
    *   baseURL: 'https://api.figma.com/v1',
    *   format: 'svg',
    *   scale: 1,
-   *   axiosConfig: {},
    *   exportVariants: true,
-   * 
+   *
    *   // Required
    *   figmaPersonalToken: 'your-personal-token',
    *   fileId: 'your-file-id',
    *   page: 'your-page-name',
    *   assetsPath: 'path/to/assets',
-   * 
+   *
    *   // Optional
    *   frame: 'your-frame-name'
    * });
-  */
+   */
   constructor(config) {
     this.config = {
-      baseURL: 'https://api.figma.com/v1',
-      format: 'svg',
+      baseURL: "https://api.figma.com/v1",
+      format: "svg",
       scale: 1,
       exportVariants: true,
-      ...config
+      batchSize: 100,
+      concurrencyLimit: 5,
+      ...config,
     };
-    this.figmaClientInstance = this.createFigmaClient(this.config.figmaPersonalToken);
+    this.assets = [];
   }
 
   /**
-   * Creates an Axios instance for the Figma API.
-   * 
+   * Makes a `GET` request to the Figma API
+   *
    * @private
-   * @param {string} token - Personal access token for the Figma API.
-  */
-  createFigmaClient(token) {
-    const instance = axios.create({ ...this.config.axiosConfig, baseURL: this.config.baseURL });
-    instance.interceptors.request.use((conf) => {
-      conf.headers = {
-        'Content-Type': 'application/json',
-        'X-Figma-Token': token
-      };
-      conf.startTime = new Date().getTime();
-      return conf;
-    });
-    return instance;
-  }
-
-  /**
-   * Fetches assets from Figma using the configured settings.
-   * 
-   * @private
-   * 
-   * @param {Object} figmaClient - The Figma API client.
-   * @param {string} fileId - The ID of the Figma file to export assets from.
-   * @param {string} pageName - The name of the page to export assets from.
-   * @param {string} frameName - The name of the frame to export assets from.
-   * @returns {Promise<Array>} A promise that resolves to an array of assets.
-   *  
+   * @param {string} endpoint - API endpoint
+   * @returns {Promise<any>} Parsed JSON response
    */
-  async getAssetsFromFigmaFile(figmaClient, fileId, pageName, frameName) {
-    const res = await figmaClient.get(`/files/${fileId}`);
-    const page = res.data.document.children.find(c => c.name === pageName);
-    if (!page) throw new Error('Cannot find Assets Page, check your settings');
+  async figmaGet(endpoint) {
+    const url = `${this.config.baseURL}${endpoint}`;
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Figma-Token": this.config.figmaPersonalToken,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error with status: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Sets the assets by fetching them from the Figma API.
+   *
+   * @returns {Promise<FigmaExporter>} The FigmaExporter instance.
+   */
+  async setAssets() {
+    const res = await this.figmaGet(`/files/${this.config.fileId}`);
+    const page = res.document.children.find(
+      (c) => c.name === this.config.page
+    );
+
+    if (!page)
+      throw new Error(`Cannot find page "${this.config.page}", check your settings`);
 
     let assetsArray = page.children;
-    if (frameName) {
-      const frameRoot = page.children.find(c => c.name === frameName);
-      if (!frameRoot) throw new Error(`Cannot find ${frameName} Frame in this Page, check your settings`);
+    if (this.config.frame) {
+      const frameRoot = page.children.find(
+        (c) => c.name === this.config.frame
+      );
+      if (!frameRoot)
+        throw new Error(
+          `Cannot find ${this.config.frame} Frame in this Page, check your settings`
+        );
       assetsArray = frameRoot.children;
     }
 
     let assets = assetsArray.flatMap((asset) => {
-      if (this.config.exportVariants && asset.children && asset.children.length > 0) {
-        return asset.children.map((child) => {
-          const variants = child.name.split(',').map((prop) => {
-            return prop.trim();
-          }).join('--');
-          return { id: child.id, name: asset.name + '/' + variants }
-        });
-      } else {
-        return [{ id: asset.id, name: asset.name }]
+      if (!this.config.exportVariants || !asset.children?.length) {
+        return [
+          {
+            id: asset.id,
+            name: asset.name,
+          },
+        ];
       }
+
+      return asset.children.map((child) => {
+        const variants = child.name
+          .split(",")
+          .map((prop) => prop.trim())
+          .join("--");
+        return {
+          id: child.id,
+          name: `${asset.name}/${variants}`,
+        };
+      });
     });
 
-    assets = this.findDuplicates('name', assets);
-    return assets;
+    const findDuplicates = (key, arr) => {
+      const seen = new Set();
+      return arr.filter((item) => {
+        const value = item[key];
+        if (seen.has(value)) {
+          console.warn(`Duplicate key value found: ${value}`);
+          return false;
+        }
+        seen.add(value);
+        return true;
+      });
+    };
+
+    this.assets = findDuplicates("name", assets);
+
+    return this;
   }
 
-  /**
-   * Filters out duplicate assets.
-   * 
-   * @private
-   * 
-   * @param {string} key - The key to filter by.
-   * @param {Array} arr - The array to filter.
-   * @returns {Array} The filtered array.
-   */
-  findDuplicates(key, arr) {
-    const seen = new Set();
-    return arr.filter(item => {
-      const value = item[key];
-      if (seen.has(value)) {
-        console.warn(`Duplicate key value found: ${value}`);
-        return false;
-      }
-      seen.add(value);
-      return true;
-    });
-  }
+  async processAssets(config = this.config, assets = this.assets) {
+    // Export step
+    for (let i = 0; i < assets.length; i += config.batchSize) {
+      const batch = assets.slice(i, i + config.batchSize);
+      const assetIds = batch.map((a) => a.id).join(",");
 
-  /**
-   * Fetches assets from Figma using the configured settings.
-   * @returns {Promise<Array>} A promise that resolves to an array of assets.
-   */
-  async getAssets() {
-    return this.getAssetsFromFigmaFile(this.figmaClientInstance, this.config.fileId, this.config.page, this.config.frame);
-  }
+      const res = await this.figmaGet(
+        `/images/${config.fileId}?ids=${assetIds}&format=${config.format}&scale=${config.scale}`
+      );
 
-  /**
-   * Exports assets from Figma in batches.
-   * @param {Array} assets - The assets to export.
-   * @param {string} [format='svg'] - The format to export the assets in.
-   * @param {number} [scale=1] - The scale at which to export the assets.
-   * @param {number} [batchSize=100] - The number of assets to export in each batch.
-   * @returns {Promise<Array>} A promise that resolves to an array of exported assets.
-   */
-  async exportAssets(assets, format = 'svg', scale = 1, batchSize = 100) {
-    const batches = [];
-    for (let i = 0; i < assets.length; i += batchSize) {
-      batches.push(assets.slice(i, i + batchSize));
+      batch.forEach((asset) => {
+        asset.url = res.images[asset.id];
+      });
     }
 
-    const results = [];
+    // Save step
+    const limit = pLimit(config.concurrencyLimit);
+    const tasks = assets
+      .filter((asset) => asset.url)
+      .map((asset) =>
+        limit(async () => {
+          const fileName = `${asset.name}.${config.format}`;
+          const filePath = path.resolve(config.assetsPath, fileName);
+          const dir = path.dirname(filePath);
 
-    for (const batch of batches) {
-      const assetIds = batch.map(asset => asset.id).join(',');
-      const res = await this.figmaClientInstance.get(`/images/${this.config.fileId}?ids=${assetIds}&format=${format}&scale=${scale}`);
+          if (!fs.existsSync(dir)) mkdirp.sync(dir);
 
-      batch.forEach(asset => {
-        asset.image = res.data.images[asset.id];
-        asset.format = format;
+          const res = await fetch(asset.url, {
+            headers: { "X-Figma-Token": config.figmaPersonalToken },
+          });
+
+          if (!res.ok) {
+            console.warn(`Download failed: ${fileName} – ${res.status}`);
+            return;
+          }
+
+          const buffer = await res.arrayBuffer();
+          const readable = Readable.from(Buffer.from(buffer));
+          const writer = fs.createWriteStream(filePath);
+
+          return new Promise((resolve, reject) => {
+            readable.pipe(writer);
+            writer.on("finish", resolve);
+            writer.on("error", reject);
+          });
+        })
+      );
+
+    await Promise.allSettled(tasks);
+  }
+
+  /** 
+   * Creates assets by asking the Figma API for the assets and saving them to the specified path.
+   *
+   * @param {function} [assetTransformFn] - Callback function to transform the asset names.
+   * @param {Object} [configOverrides] - Overrides for the default configuration.
+   * @returns {Promise<FigmaExporter>} The FigmaExporter instance.
+   */
+  async createAssets(assetTransformFn = (assets) => assets, configOverrides = {}) {
+    const config = { ...this.config, ...configOverrides };
+    const assetsIncludingAssetsPath = this.assets.map((asset) => ({
+      ...asset,
+      assetsPath: config.assetsPath,
+    }));
+    let assets = assetTransformFn([...assetsIncludingAssetsPath]);
+
+    function getAllFilesRecursively(dir, rootDir = dir) {
+      const files = new Set();
+
+      for (const item of readdirSync(dir)) {
+        const fullPath = join(dir, item);
+        const relativePath = path.relative(rootDir, fullPath);
+        const stat = statSync(fullPath);
+
+        if (stat.isDirectory()) {
+          for (const sub of getAllFilesRecursively(fullPath, rootDir)) {
+            files.add(sub);
+          }
+        } else {
+          files.add(relativePath);
+        }
+      }
+
+      return files;
+    }
+
+
+    if (config.skipExistingFiles) {
+      let skipped = 0;
+
+      const existingFiles = getAllFilesRecursively(config.assetsPath);
+
+      assets = assets.filter((asset) => {
+        const fileName = `${asset.name}.${config.format}`;
+        const relativePath = path.normalize(fileName);
+
+        const isDuplicate = existingFiles.has(relativePath);
+        if (isDuplicate) {
+          skipped++;
+        }
+        return !isDuplicate;
       });
 
-      results.push(...batch);
-    }
-
-    return results;
-  }
-
-  /**
-   * Saves assets to the configured assets path.
-   * @param {Object} asset - The assets to save.
-   * @param {Object} [overrideConfig] - Overrides for the exporter config.
-   * @param {string} [overrideConfig.name] - Overrides the name of the asset.
-   * @param {string} [overrideConfig.format='svg'] - The format of the exported assets. Optional.
-   * @param {string} [overrideConfig.assetsPath] - The path to save the exported assets to. Optional.
-   * @param {number} [overrideConfig.scale=1] - The scale at which to export assets. Optional.
-   * @returns {Promise} A promise that resolves when all assets have been saved.
-   */
-
-  async saveAsset(asset, overrideConfig = {}) {
-    const finalConfig = { ...this.config, ...overrideConfig };
-    const finalName = overrideConfig.name || asset.name;
-    const imagePath = path.resolve(finalConfig.assetsPath, `${finalName}.${asset.format}`);
-
-    // Ensure directory exists
-    const directory = path.dirname(imagePath);
-    if (!fs.existsSync(directory)) {
-      mkdirp.sync(directory);
-    }
-
-    const writer = fs.createWriteStream(imagePath);
-
-    const response = await axios.get(asset.image, {
-      responseType: 'stream',
-      headers: {
-        'X-Figma-Token': this.config.figmaPersonalToken
+      if (skipped > 0) {
+        console.warn(
+          `Skipped: ${skipped}`
+        );
       }
-    });
-    response.data.pipe(writer);
+    }
 
-    return new Promise((resolve, reject) => {
-      writer.on('finish', resolve);
-      writer.on('error', reject);
-    });
+    try {
+      await this.processAssets(config, assets);
+    } catch (err) {
+      console.error("createAssets() failed:", err);
+    }
+
+    return this;
   }
 }
-
-module.exports = {
-  FigmaExporter
-};

@@ -8,179 +8,220 @@ npm install figma-export-assets
 
 ## Description
 
-A highly customizable package for exporting assets from Figma API in any supported format.
+A highly customizable package for exporting assets from the Figma API in any supported format.
 
 🙏🏻 Based on concepts by https://github.com/tsimenis/figma-export-icons and https://github.com/nate-summercook/figma-assets-exporter but with focus on customizability. Thanks to both of them for their work!
 
 ## Features
 
 -   📄 Multiple Figma Pages/Frames: Configure to process assets from various Figma pages or specific frames.
--   🔄 Batch Exporting: Supports batch exporting out of the box to overcame Figma API export limits.
+-   🔄 Batch Exporting: Supports batch exporting out of the box to handle Figma API export limits.
 -   📁 Customizable Asset Paths/Names: Set unique saving paths or names for each asset.
--   🌈 Customizable Asset Format: Chose any Figma export format for each asset.
+-   🌈 Customizable Asset Format: Choose any Figma export format for each asset.
 -   🚫 Asset Exclusion: Easily exclude specific assets from export based on their names.
--   ⚙️ Axios Integration: Extend or modify Axios configurations for advanced HTTP request handling.
 -   🌟 Variant Exporting: Overridable option to export components with variants as separate assets.
 
-## Example: Basic Usage
+## Examples
+
+### Basic Usage
 
 ```js
-// get figmaPersonalToken and fileId from .env
-require("dotenv").config({ path: ".env" });
+import { FigmaExporter } from "figma-export-assets";
+import dotenv from "dotenv";
+dotenv.config();
 
-const { FigmaExporter } = require("figma-export-assets");
+const exporter = new FigmaExporter({
+	figmaPersonalToken: process.env.FIGMA_PERSONAL_TOKEN,
+	fileId: process.env.FILE_ID,
+	page: process.env.PAGE,
+	assetsPath: "src/assets",
+	format: "svg",
+});
 
-const config = {
-	figmaPersonalToken: process.env.figma_token,
-	fileId: process.env.figma_file_id,
-	page: "📎 assets",
-	assetsPath: "src",
-};
-
-async function main() {
-	// 0. Initialize exporter
-	const figma = new FigmaExporter(config);
-
-	// 1. Get an array of all assets in the Figma file
-	let assets = await figma.getAssets();
-
-	// 2. Create SVGs (Figma API)
-	svgs = await figma.exportAssets(assets, "svg");
-
-	const svgDownloads = svgs.map(async (asset) => {
-		// 3. Download each exported asset
-		await figma.saveAsset(asset);
-		console.log(`Downloaded ${asset.name} as svg`);
-	});
-
-	await Promise.all(svgDownloads);
-}
-
-// Run everything
-main();
+await exporter.setAssets();
+await exporter.createAssets();
 ```
 
-## Example: Individual Asset Handling
+### Export variants with custom names
 
 ```js
-// get figmaPersonalToken and fileId from .env
-require("dotenv").config({ path: ".env" });
+import { FigmaExporter } from "figma-export-assets";
+import dotenv from "dotenv";
+dotenv.config();
 
-const { FigmaExporter } = require("figma-export-assets");
+const exporter = new FigmaExporter({
+	figmaPersonalToken: process.env.FIGMA_PERSONAL_TOKEN,
+	fileId: process.env.FILE_ID,
+	page: process.env.PAGE,
+	frame: "component",
+	exportVariants: true,
+	assetsPath: "src/assets",
+	format: "svg",
+});
 
-const config = {
-	figmaPersonalToken: process.env.figma_token,
-	fileId: process.env.figma_file_id,
-	page: "📎 assets",
-	assetsPath: "src",
-};
+await exporter.setAssets();
 
-async function main() {
-	// 0. Initialize exporter
-	const figma = new FigmaExporter(config);
-
-	// Helper function to optimize the path coming from Figma
-	const optimizePath = (path) =>
-		path.replace("assets/", "").replace("name=", "").replace(".png", "");
-
-	// 1. Get an array of all assets in the Figma file
-	let assets = await figma.getAssets();
-
-	// 2. Create PNGs
-
-	// 2a. Select all assets which have `.png` in their name in Figma
-	let pngs = assets.filter((asset) => asset.name.includes(".png"));
-	// 2b. Let Figma export the assets as PNGs with a scale of 4
-	pngs = await figma.exportAssets(pngs, "png", 4);
-	const pngDownloads = pngs.map(async (asset) => {
-		// 2c. Download each exported asset
-		await figma.saveAsset(asset, {
-			// 2d. Optimize the path coming from Figma
-			path: optimizePath(asset.name),
-		});
-		console.log(`Downloaded ${asset.name} as png`);
-	});
-	await Promise.all(pngDownloads);
-
-	// 3. Create SVGs
-
-	// 3a. Select all assets which do NOT have `.png` in their name in Figma
-	let svgs = assets.filter((asset) => !asset.name.includes(".png"));
-	// 3b. Let Figma export the assets as SVGs
-	svgs = await figma.exportAssets(svgs, "svg");
-	const svgDownloads = svgs.map(async (asset) => {
-		// 3c. Download each exported asset
-		await figma.saveAsset(asset, {
-			// 3d. Optimize the path coming from Figma
-			name: optimizePath(asset.name),
-		});
-		console.log(`Downloaded ${asset.name} as svg`);
-	});
-	await Promise.all(svgDownloads);
-}
-
-// Run everything
-main();
+await exporter.createAssets((assets) =>
+	assets.map((a) => ({
+		...a,
+		name: a.name.replace("component/", ""),
+	}))
+);
 ```
 
-## Constructor
+### Chaining exports to multiple formats/paths
 
-### `constructor(config)`
+```js
+import { FigmaExporter } from "figma-export-assets";
+import dotenv from "dotenv";
+dotenv.config();
 
-Creates a new instance of the FigmaExporter.
+const baseConfig = {
+	figmaPersonalToken: process.env.FIGMA_PERSONAL_TOKEN,
+	fileId: process.env.FILE_ID,
+	page: process.env.PAGE,
+	exportVariants: true,
+};
 
-#### Parameters
+const exporter = new FigmaExporter(baseConfig);
 
--   `config`: An object containing configuration settings.
-    -   `baseURL` (string, optional): The base URL for the Figma API. Defaults to `'https://api.figma.com/v1'`.
-    -   `format` (string, optional): The format of the exported assets. Defaults to `'svg'`.
-    -   `assetsPath` (string, required): The path to save the exported assets to.
-    -   `scale` (number, optional): The scale at which to export assets. Defaults to `1`.
-    -   `axiosConfig` (Object, optional): Additional Axios configuration settings.
-    -   `exportVariants` (boolean, optional): Whether to export variants of the assets. Defaults to `true`.
-    -   `figmaPersonalToken` (string, required): Personal access token for the Figma API.
-    -   `fileId` (string, required): The ID of the Figma file to export assets from.
-    -   `page` (string, required): The name of the page to export assets from.
-    -   `frame` (string, optional): The name of the frame to export assets from.
+await exporter.setAssets();
+
+await exporter.createAssets(
+	(assets) =>
+		assets
+			.filter((a) => !a.name.includes("images"))
+			.map((a) => ({
+				...a,
+				name: a.name.replace("icons/", ""),
+			})),
+	{ assetsPath: "src/svg", format: "svg" }
+);
+
+await exporter.createAssets(
+	(assets) =>
+		assets
+			.filter((a) => a.name.includes("images"))
+			.map((a) => ({
+				...a,
+				name: a.name.replace("images/", ""),
+			})),
+	{ assetsPath: "src/jpg", format: "jpg" }
+);
+```
 
 ## Methods
 
-### `getAssets()`
+### `constructor(config: Config)`
 
-Fetches assets from Figma using the configured settings.
+-   **Description**: Initializes the FigmaExporter instance with the provided configuration.
+-   **Parameters**: `config` - The configuration object containing the Figma API token, file ID, page name, and other settings.
 
-#### Returns
+### `setAssets()`
 
--   `Promise<Array>`: A promise that resolves to an array of assets.
+-   **Description**: Sets the assets by fetching them from the Figma API.
+-   **Parameters**: None
+-   **Returns**: `Promise<FigmaExporter>` - The instance of the exporter with the assets set.
 
-### `exportAssets(assets, format, scale, batchSize)`
+### `createAssets(assetTransformFn, config)`
 
-Exports assets from Figma in batches.
+-   **Description**: Creates assets by asking the Figma API for the assets and saving them to the specified path.
+-   **Parameters**:
+    -   `assetTransformFn`: Callback function to transform the assets before saving them. It receives the assets as an argument and should return an array of assets.
+        -   **Parameters**: `assets: Asset[]` - The array of assets to transform.
+        -   **Returns**: `Asset[]` - The transformed array of assets.
+        -   **Example**: `(assets) => assets.map((a) => ({ ...a, name: a.name.replace("component/", "") }))`
+    -   `config`: Optional configuration object to override the default settings for this export.
+-   **Returns**: `Promise<FigmaExporter>` - The instance of the exporter with the assets set.
 
-#### Parameters
+## Parameters
 
--   `assets` (Array): The assets to export.
--   `format` (string, optional): The format to export the assets in. Defaults to `'svg'`.
--   `scale` (number, optional): The scale at which to export the assets. Defaults to `1`.
--   `batchSize` (number, optional): The number of assets to export in each batch. Defaults to `100`.
+### Config
 
-#### Returns
+This can be overriden in every `createAssets` call.
 
--   `Promise<Array>`: A promise that resolves to an array of exported assets.
+```typescript
+{
+    /**
+     * - Personal access token for the Figma API.
+     */
+    figmaPersonalToken: string;
+    /**
+     * - The ID of the Figma file to export assets from.
+     */
+    fileId: string;
+    /**
+     * - The name of the page to export assets from.
+     */
+    page: string;
+    /**
+     * - The path to save the exported assets.
+     */
+    assetsPath: string;
+    /**
+     * - The format of the exported assets.
+     */
+    format?: string;
+    /**
+     * - The scale at which to export assets.
+     */
+    scale?: number;
+    /**
+     * - Whether to export variants of the assets.
+     */
+    exportVariants?: boolean;
+    /**
+     * - The name of the frame to export assets from.
+     */
+    frame?: string;
+    /**
+     * - The number of assets to export in each batch.
+     */
+    batchSize?: number;
+    /**
+     * - The maximum number of concurrent requests.
+     */
+    concurrencyLimit?: number;
+    /**
+     * - Whether to skip existing files.
+     */
+    skipExistingFiles?: boolean;
+};
+```
 
-### `saveAsset(asset, overrideConfig)`
+### Asset
 
-Saves assets to the configured assets path.
+This can be overriden in every `createAssets` call to optimize paths or names.
 
-#### Parameters
+```ts
+{
+    /**
+     * - The ID of the asset.
+     */
+    id: string;
+    /**
+     * - The name of the asset.
+     */
+    name: string;
+    /**
+     * - The URL of the asset image.
+     */
+    url?: string;
+    /**
+     * - The path to save the asset.
+     */
+    assetsPath?: string;
+}
+```
 
--   `asset` (Object): The asset to save.
--   `overrideConfig` (Object, optional): Overrides for the exporter configuration.
-    -   `name` (string, optional): Overrides the name of the asset.
-    -   `format` (string, optional): The format of the exported assets. Defaults to `'svg'`.
-    -   `assetsPath` (string, optional): The path to save the exported assets to.
-    -   `scale` (number, optional): The scale at which to export assets. Defaults to `1`.
+## Contributing
 
-#### Returns
+### Versioning
 
--   `Promise`: A promise that resolves when all assets have been saved.
+Create a changeset via `pnpm changeset` that describes the changes you made to the codebase. This will be used to generate a changelog entry and version bump. It will be picked up by the release workflow.
+
+### Testing
+
+The tests are based on the following file: https://www.figma.com/design/fgP5dbJzh1bnZqMgnDXoyd/test?node-id=0-1&p=f&t=5uSDKcMwgBqsYBg0-11
+
+To test yourself, duplicate the file to your drafts and add the needed data to the `.env` file (see `.env.example`).
