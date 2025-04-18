@@ -4,11 +4,10 @@
 
 ### Major Changes
 
-- Rewrite API completely. _[`#1`](https://github.com/mariohamann/figma-export-assets/pull/1) [`342b740`](https://github.com/mariohamann/figma-export-assets/commit/342b740cc76d0b3b781a401392d950073cf9465b) [@lucoel](https://github.com/lucoel)_
-
-  Replace Axios with Node fetch API.
-  Add feature to skip existing assets.
-  Add tests.
+- Replace Axios with Node fetch API. _[`#1`](https://github.com/mariohamann/figma-export-assets/pull/1) [`342b740`](https://github.com/mariohamann/figma-export-assets/commit/342b740cc76d0b3b781a401392d950073cf9465b) [@lucoel](https://github.com/lucoel)_
+- Rewrite API completely. 
+- Add feature to skip existing assets.
+- Add tests.
 
 ### Bug Fixes
 
