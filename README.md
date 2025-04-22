@@ -175,6 +175,10 @@ This can be overriden in every `createAssets` call.
      */
     frame?: string;
     /**
+     * - Maximum number of nested levels to traverse in the Figma file.
+     */
+    depth?: number;
+    /**
      * - The number of assets to export in each batch.
      */
     batchSize?: number;
