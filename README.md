@@ -143,39 +143,40 @@ This can be overriden in every `createAssets` call.
 ```typescript
 {
     /**
-     * - Personal access token for the Figma API.
+     * Personal access token for the Figma API.
      */
     figmaPersonalToken: string;
     /**
-     * - The ID of the Figma file to export assets from.
+     * The ID of the Figma file to export assets from.
      */
     fileId: string;
     /**
-     * - The name of the page to export assets from.
+     * The name of the page to export assets from.
      */
     page: string;
     /**
-     * - The path to save the exported assets.
+     * The path to save the exported assets.
      */
     assetsPath: string;
     /**
-     * - The format of the exported assets.
+     * The format of the exported assets.
      */
     format?: string;
     /**
-     * - The scale at which to export assets.
+     * The scale at which to export assets.
      */
     scale?: number;
     /**
-     * - Whether to export variants of the assets.
+     * Whether to export variants of the assets.
      */
     exportVariants?: boolean;
     /**
-     * - The name of the frame to export assets from.
+     * The name of the frame to export assets from.
      */
     frame?: string;
     /**
-     * - Maximum number of nested levels to traverse in the Figma file.
+     * Maximum number of nested levels to traverse in the Figma file.
+     * See https://developers.figma.com/docs/rest-api/file-endpoints/#get-files-endpoint for details.
      */
     depth?: number;
     /**

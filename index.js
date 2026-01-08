@@ -17,6 +17,8 @@ import pLimit from "p-limit";
  * @property {boolean} [exportVariants=true] - Whether to export variants of the assets.
  * @property {string} [frame] - The name of the frame to export assets from.
  * @property {number} [depth] - Maximum number of nested levels to traverse in the Figma file.
+ *   See [Figma API docs](https://developers.figma.com/docs/rest-api/file-endpoints/#get-files-endpoint) 
+ *   for more details.
  * @property {number} [batchSize=100] - The number of assets to export in each batch.
  * @property {number} [concurrencyLimit=5] - The maximum number of concurrent requests.
  * @property {boolean} [skipExistingFiles=false] - Whether to skip existing files.
