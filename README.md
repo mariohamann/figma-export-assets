@@ -176,19 +176,20 @@ This can be overriden in every `createAssets` call.
     frame?: string;
     /**
      * Maximum number of nested levels to traverse in the Figma file.
-     * See https://developers.figma.com/docs/rest-api/file-endpoints/#get-files-endpoint for details.
+     * See https://developers.figma.com/docs/rest-api/file-endpoints/#get-files-endpoint
+     * for details.
      */
     depth?: number;
     /**
-     * - The number of assets to export in each batch.
+     * The number of assets to export in each batch.
      */
     batchSize?: number;
     /**
-     * - The maximum number of concurrent requests.
+     * The maximum number of concurrent requests.
      */
     concurrencyLimit?: number;
     /**
-     * - Whether to skip existing files.
+     * Whether to skip existing files.
      */
     skipExistingFiles?: boolean;
 };
@@ -201,19 +202,19 @@ This can be overriden in every `createAssets` call to optimize paths or names.
 ```ts
 {
     /**
-     * - The ID of the asset.
+     * The ID of the asset.
      */
     id: string;
     /**
-     * - The name of the asset.
+     * The name of the asset.
      */
     name: string;
     /**
-     * - The URL of the asset image.
+     * The URL of the asset image.
      */
     url?: string;
     /**
-     * - The path to save the asset.
+     * The path to save the asset.
      */
     assetsPath?: string;
 }
