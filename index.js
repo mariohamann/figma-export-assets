@@ -1,10 +1,10 @@
 import fs from "node:fs";
-import path from "node:path";
-import { mkdirp } from "mkdirp";
-import { Readable } from "node:stream";
-import pLimit from "p-limit";
 import { readdirSync, statSync } from "node:fs";
+import path from "node:path";
 import { join } from "node:path";
+import { Readable } from "node:stream";
+import { mkdirp } from "mkdirp";
+import pLimit from "p-limit";
 
 /**
  * @typedef {Object} Config
@@ -16,6 +16,9 @@ import { join } from "node:path";
  * @property {number} [scale=1] - The scale at which to export assets.
  * @property {boolean} [exportVariants=true] - Whether to export variants of the assets.
  * @property {string} [frame] - The name of the frame to export assets from.
+ * @property {number} [depth] - Maximum number of nested levels to traverse in the Figma file.
+ * See [Figma API docs](https://developers.figma.com/docs/rest-api/file-endpoints/#get-files-endpoint) 
+ * for more details.
  * @property {number} [batchSize=100] - The number of assets to export in each batch.
  * @property {number} [concurrencyLimit=5] - The maximum number of concurrent requests.
  * @property {boolean} [skipExistingFiles=false] - Whether to skip existing files.
@@ -57,7 +60,7 @@ export default class FigmaExporter {
    */
   constructor(config) {
     this.config = {
-      baseURL: "https://api.figma.com/v1",
+      baseURL: "https://api.figma.com",
       format: "svg",
       scale: 1,
       exportVariants: true,
@@ -73,10 +76,19 @@ export default class FigmaExporter {
    *
    * @private
    * @param {string} endpoint - API endpoint
+   * @param {Object} [params] - Query parameters
    * @returns {Promise<any>} Parsed JSON response
    */
-  async figmaGet(endpoint) {
-    const url = `${this.config.baseURL}${endpoint}`;
+  async figmaGet(endpoint, params = {}) {
+    const url = new URL(endpoint, this.config.baseURL);
+
+    // Add query parameters if any
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined) {
+        url.searchParams.set(key, value);
+      }
+    }
+
     const response = await fetch(url, {
       method: "GET",
       headers: {
@@ -98,7 +110,10 @@ export default class FigmaExporter {
    * @returns {Promise<FigmaExporter>} The FigmaExporter instance.
    */
   async setAssets() {
-    const res = await this.figmaGet(`/files/${this.config.fileId}`);
+    const res = await this.figmaGet(`v1/files/${this.config.fileId}`, {
+      depth: this.config.depth,
+    });
+
     const page = res.document.children.find(
       (c) => c.name === this.config.page
     );
@@ -118,7 +133,7 @@ export default class FigmaExporter {
       assetsArray = frameRoot.children;
     }
 
-    let assets = assetsArray.flatMap((asset) => {
+    const assets = assetsArray.flatMap((asset) => {
       if (!this.config.exportVariants || !asset.children?.length) {
         return [
           {
@@ -164,9 +179,11 @@ export default class FigmaExporter {
       const batch = assets.slice(i, i + config.batchSize);
       const assetIds = batch.map((a) => a.id).join(",");
 
-      const res = await this.figmaGet(
-        `/images/${config.fileId}?ids=${assetIds}&format=${config.format}&scale=${config.scale}`
-      );
+      const res = await this.figmaGet(`v1/images/${config.fileId}`, {
+        ids: assetIds,
+        format: config.format,
+        scale: config.scale
+      });
 
       batch.forEach((asset) => {
         asset.url = res.images[asset.id];

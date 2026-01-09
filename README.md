@@ -143,47 +143,53 @@ This can be overriden in every `createAssets` call.
 ```typescript
 {
     /**
-     * - Personal access token for the Figma API.
+     * Personal access token for the Figma API.
      */
     figmaPersonalToken: string;
     /**
-     * - The ID of the Figma file to export assets from.
+     * The ID of the Figma file to export assets from.
      */
     fileId: string;
     /**
-     * - The name of the page to export assets from.
+     * The name of the page to export assets from.
      */
     page: string;
     /**
-     * - The path to save the exported assets.
+     * The path to save the exported assets.
      */
     assetsPath: string;
     /**
-     * - The format of the exported assets.
+     * The format of the exported assets.
      */
     format?: string;
     /**
-     * - The scale at which to export assets.
+     * The scale at which to export assets.
      */
     scale?: number;
     /**
-     * - Whether to export variants of the assets.
+     * Whether to export variants of the assets.
      */
     exportVariants?: boolean;
     /**
-     * - The name of the frame to export assets from.
+     * The name of the frame to export assets from.
      */
     frame?: string;
     /**
-     * - The number of assets to export in each batch.
+     * Maximum number of nested levels to traverse in the Figma file.
+     * See https://developers.figma.com/docs/rest-api/file-endpoints/#get-files-endpoint
+     * for details.
+     */
+    depth?: number;
+    /**
+     * The number of assets to export in each batch.
      */
     batchSize?: number;
     /**
-     * - The maximum number of concurrent requests.
+     * The maximum number of concurrent requests.
      */
     concurrencyLimit?: number;
     /**
-     * - Whether to skip existing files.
+     * Whether to skip existing files.
      */
     skipExistingFiles?: boolean;
 };
@@ -196,19 +202,19 @@ This can be overriden in every `createAssets` call to optimize paths or names.
 ```ts
 {
     /**
-     * - The ID of the asset.
+     * The ID of the asset.
      */
     id: string;
     /**
-     * - The name of the asset.
+     * The name of the asset.
      */
     name: string;
     /**
-     * - The URL of the asset image.
+     * The URL of the asset image.
      */
     url?: string;
     /**
-     * - The path to save the asset.
+     * The path to save the asset.
      */
     assetsPath?: string;
 }
