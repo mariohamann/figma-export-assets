@@ -1,11 +1,17 @@
 ## [1.0.4](https://github.com/mariohamann/figma-export-assets/compare/v1.0.3...v1.0.4) (2024-01-07)
 
+## 2.1.0
+
+### Minor Changes
+
+- Optional `depth` parameter for `setAssets()` _[`#3`](https://github.com/mariohamann/figma-export-assets/pull/3) [`1b17422`](https://github.com/mariohamann/figma-export-assets/commit/1b174221bff3caae91f629fa4eaa33b1c8cf303b) [@lucoel](https://github.com/lucoel)_
+
 ## 2.0.0
 
 ### Major Changes
 
 - Replace Axios with Node fetch API. _[`#1`](https://github.com/mariohamann/figma-export-assets/pull/1) [`342b740`](https://github.com/mariohamann/figma-export-assets/commit/342b740cc76d0b3b781a401392d950073cf9465b) [@lucoel](https://github.com/lucoel)_
-- Rewrite API completely. 
+- Rewrite API completely.
 - Add feature to skip existing assets.
 - Add tests.
 
