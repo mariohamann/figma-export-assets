@@ -15,16 +15,17 @@ jobs:
             contents: write # to be able to publish a GitHub release
             issues: write # to be able to comment on released issues
             pull-requests: write # to be able to comment on released pull requests
-            id-token: write # to enable use of OIDC for npm provenance
+            id-token: write # Required for npm trusted publishing (OIDC)
 
         steps:
             - name: Checkout Repo
               uses: actions/checkout@v3
 
-            - name: Setup Node.js 22
+            - name: Setup Node.js
               uses: actions/setup-node@v4
               with:
-                  node-version: 22
+                  node-version: 24
+                  registry-url: "https://registry.npmjs.org"
 
             - uses: pnpm/action-setup@v2
               with:
@@ -40,4 +41,3 @@ jobs:
                   publish: pnpm release
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
